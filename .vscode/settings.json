@@ -1,0 +1,13 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "python.pythonPath": "/home/joey/Apps/TensorFlow/bin/python3",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.pep8Enabled": false,
+    "python.linting.pylintPath": "/home/joey/Apps/TensorFlow/bin/pylint",
+    "python.linting.pep8Path": "/home/joey/Apps/TensorFlow/bin/pep8",
+    "python.linting.flake8Path": "/home/joey/Apps/TensorFlow/bin/flake8",
+    "python.jediPath": "/home/joey/Apps/TensorFlow/lib/python3.5/site-packages"
+    //"editor.formatOnPaste": true
+}
