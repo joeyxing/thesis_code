@@ -9,6 +9,11 @@ Validating/
 *.pyc
 *.gz
 test.ipynb
+0/
+1/
+2/
+3/
+4/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
