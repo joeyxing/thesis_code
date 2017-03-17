@@ -21,10 +21,10 @@ with open('/home/joey/Work/thesis_code/labels.txt', 'r+') as label_file:
     labels.pop(-1)
     for filename_label in labels:
         tmp_file_label = filename_label.split(' ')
-        is_mali = False
-        if tmp_file_label[1] == 'true':
-            is_mali = True
-        MALI_LABEL_DICT[tmp_file_label[0]] = is_mali
+        # is_mali = False
+        # if tmp_file_label[1] == 'true':
+            # is_mali = True
+        MALI_LABEL_DICT[tmp_file_label[0]] = int(tmp_file_label[1]) - 1
 
 # Data Preparation #
 # load label file #
@@ -43,49 +43,62 @@ def separate_BM(from_data=IMAGE_DIR, force=False):
     """
     """
     print(from_data)
-    benign_dir = os.path.join(PROJECT_ROOT, "benign")
-    mali_dir = os.path.join(PROJECT_ROOT, "mali")
-    if os.path.isdir(benign_dir) and os.path.isdir(mali_dir) and not force:
-        print("Dataset already exists, skip creating...")
-        return (os.listdir(benign_dir), os.listdir(mali_dir))
+
+    if force:
+        for i in range(5):
+            try:
+                print("Try removing directory %d" % i)
+                rmdir_(os.path.join(PROJECT_ROOT, str(i)))
+            except FileNotFoundError as err:
+                pass
+
     else:
-        try:
-            print("Try removing existing directory...")
-            rmdir_(benign_dir)
-            rmdir_(mali_dir)
-        except FileNotFoundError as err:
-            pass
-        
-        os.mkdir(benign_dir)
-        os.mkdir(mali_dir)
-        for image in os.listdir(from_data):
-            if MALI_LABEL_DICT[image]:
-                copy2(os.path.join(from_data, image), mali_dir)
-            else:
-                copy2(os.path.join(from_data, image), benign_dir)
-        return (os.listdir(benign_dir), os.listdir(mali_dir))
+        status_ok = True
+        for i in range(5):
+            status_ok = status_ok and os.path.isdir(os.path.join(PROJECT_ROOT, str(i)))
+        if status_ok:
+            return [os.listdir(os.path.join(PROJECT_ROOT, str(x))) for x in range(5)]
+        else:
+            print("Current data broken, use force=True")
+            return None
 
-BENIGN_IMAGES, MALI_IMAGES = separate_BM()
 
-TEST_SET_SIZE = 200
-VALID_SET_SIZE = 200
-TRAIN_SET_SIZE = len(BENIGN_IMAGES) - TEST_SET_SIZE - VALID_SET_SIZE
+    for i in range(5):
+        os.mkdir(os.path.join(PROJECT_ROOT, str(i)))
+    for image in os.listdir(from_data):
+        class_dir = os.path.join(PROJECT_ROOT, str(MALI_LABEL_DICT[image]))
+        copy2(os.path.join(from_data, image), class_dir)
+    return [os.listdir(os.path.join(PROJECT_ROOT, str(x))) for x in range(5)]
+
+
+    
+
+mali_classes_images = separate_BM(force=True)
+
+
+TEST_PER_CLASS = 40
+VALID_PER_CLASS = 40
+NUM_PER_CLASS = min([len(x) for x in mali_classes_images]) -
+                    TEST_PER_CLASS - VALID_PER_CLASS
 
 # create_datasets file system
 def create_dataset(dataset_folder_name, set_size):
-    bf = os.path.join(PROJECT_ROOT, dataset_folder_name, "benign")
-    mf = os.path.join(PROJECT_ROOT, dataset_folder_name, "mali")
-    os.makedirs(bf)
-    os.makedirs(mf)
+    for cls in range(len(mali_classes_images)):
+        f = os.path.join(PROJECT_ROOT, dataset_folder_name, str(cls))
+        try:
+            rmdir_(f)
+        except FileNotFoundError as e:
+            pass
+        os.makedirs(f)
+        img_dir = os.path.join(PROJECT_ROOT, str(cls))
+        for img in random.sample(os.listdir(img_dir), set_size):
+            img = os.path.join(PROJECT_ROOT, str(cls), img)
+            move(img, f)
 
-    for bi in random.sample(os.listdir(os.path.join(PROJECT_ROOT, "benign")), set_size):
-        move(os.path.join(PROJECT_ROOT, "benign", bi), bf)
-    for mi in random.sample(os.listdir(os.path.join(PROJECT_ROOT, "mali")), set_size):
-        move(os.path.join(PROJECT_ROOT, "mali", mi), mf)
 
-create_dataset("Training", TRAIN_SET_SIZE)
-create_dataset("Testing", TEST_SET_SIZE)
-create_dataset("Validating", VALID_SET_SIZE)
+create_dataset("Training", NUM_PER_CLASS)
+create_dataset("Testing", TEST_PER_CLASS)
+create_dataset("Validating", VALID_PER_CLASS)
 
 def load_image_tensor(folder):
     """
@@ -111,16 +124,16 @@ def pickle_tensor(dataset_folder, force=False):
     data_dir: image folder
     """
     dataset_names = []
-    for bmfolder in os.listdir(dataset_folder):
-        pickle_name = bmfolder + '.pickle'
+    for level_folder in os.listdir(dataset_folder):
+        pickle_name = level_folder + '.pickle'
         pickle_name = os.path.join(dataset_folder, pickle_name)
         dataset_names.append(pickle_name)
-        if os.path.isfile(os.path.join(dataset_folder, bmfolder, pickle_name)) and not force:
+        if os.path.isfile(pickle_name) and not force:
             # override by setting force=True.
             print('%s already present - Skipping pickling.' % pickle_name)
         else:
             print('Pickling %s.' % pickle_name)
-            image_tensor = load_image_tensor(os.path.join(dataset_folder, bmfolder))
+            image_tensor = load_image_tensor(os.path.join(dataset_folder, level_folder))
             try:
                 with open(pickle_name, 'wb') as f:
                     pickle.dump(image_tensor, f, pickle.HIGHEST_PROTOCOL)
@@ -149,9 +162,9 @@ def merge_datasets(pickle_files, length):
         try:
             with open(pickle_file, 'rb') as f:
                 set1 = pickle.load(f)
-                dataset[current_idx: current_idx + set1.shape[0]] = set1
-                labels[current_idx: current_idx + set1.shape[0]] = label
-                current_idx += set1.shape[0]
+            dataset[current_idx: current_idx + set1.shape[0]] = set1
+            labels[current_idx: current_idx + set1.shape[0]] = label
+            current_idx += set1.shape[0]
         except Exception as e:
             print('Unable to process data from', pickle_file, ':', e)
             raise
@@ -161,9 +174,9 @@ def merge_datasets(pickle_files, length):
     shuffled_labels = labels[permutation]
     return shuffled_dataset, shuffled_labels
 
-train_dataset, train_labels = merge_datasets(TRAIN_SETS_NAME, 2 * TRAIN_SET_SIZE)
-valid_dataset, valid_labels = merge_datasets(VALID_SETS_NAME, 2 * VALID_SET_SIZE)
-test_dataset, test_labels = merge_datasets(TEST_SETS_NAME, 2 * TEST_SET_SIZE)
+train_dataset, train_labels = merge_datasets(TRAIN_SETS_NAME, 5 * NUM_PER_CLASS)
+valid_dataset, valid_labels = merge_datasets(VALID_SETS_NAME, 5 * VALID_PER_CLASS)
+test_dataset, test_labels = merge_datasets(TEST_SETS_NAME, 5 * TEST_PER_CLASS)
 
 with open("lung_cancer_data.pickle", "wb") as f:
     save = {

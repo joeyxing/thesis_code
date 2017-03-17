@@ -13,6 +13,9 @@ regr.predict()
 ### NumPy
 `np.random.permutation`
 
+### need to improve
+1. Add more classes
+2. 
 ## Training Model
 1. Simple LogisticRegression -> sklearn.linear_model.LogisticRegression
 2. fully connected -> TensorFlow.nn.relu
