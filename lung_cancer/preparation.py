@@ -2,7 +2,6 @@
 import os
 import pickle
 import random
-import sys
 from shutil import move, copy2
 
 # import matplotlib.pyplot as plt
@@ -24,7 +23,7 @@ with open('/home/joey/Work/thesis_code/labels.txt', 'r+') as label_file:
         # is_mali = False
         # if tmp_file_label[1] == 'true':
             # is_mali = True
-        MALI_LABEL_DICT[tmp_file_label[0]] = int(tmp_file_label[1]) - 1
+        MALI_LABEL_DICT[tmp_file_label[0]] = round(float(tmp_file_label[1])) - 1
 
 # Data Preparation #
 # load label file #
@@ -71,15 +70,14 @@ def separate_BM(from_data=IMAGE_DIR, force=False):
     return [os.listdir(os.path.join(PROJECT_ROOT, str(x))) for x in range(5)]
 
 
-    
+
 
 mali_classes_images = separate_BM(force=True)
 
 
 TEST_PER_CLASS = 40
 VALID_PER_CLASS = 40
-NUM_PER_CLASS = min([len(x) for x in mali_classes_images]) -
-                    TEST_PER_CLASS - VALID_PER_CLASS
+NUM_PER_CLASS = min([len(x) for x in mali_classes_images]) - TEST_PER_CLASS - VALID_PER_CLASS
 
 # create_datasets file system
 def create_dataset(dataset_folder_name, set_size):
