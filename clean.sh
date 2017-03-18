@@ -1,3 +1,4 @@
+#!/bin/bash
 rm -r 0/
 rm -r 1/
 rm -r 2/
