@@ -39,7 +39,7 @@ print('Training set', train_dataset.shape, train_labels.shape)
 print('Validation set', valid_dataset.shape, valid_labels.shape)
 print('Test set', test_dataset.shape, test_labels.shape)
 
-batch_size = 128
+batch_size = 256
 
 graph = tf.Graph()
 with graph.as_default():
@@ -74,6 +74,10 @@ with graph.as_default():
 
 
 num_steps = 3001
+
+def accuracy(predictions, labels):
+    return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))) / predictions.shape[0]
+
 
 with tf.Session(graph=graph) as session:
     tf.global_variables_initializer().run()

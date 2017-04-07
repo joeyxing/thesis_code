@@ -188,3 +188,5 @@ with open("lung_cancer_data.pickle", "wb") as f:
     pickle.dump(save, f, pickle.HIGHEST_PROTOCOL)
 
 ### END of Data Preparation ###
+if __name__ == "__main__":
+    pass
